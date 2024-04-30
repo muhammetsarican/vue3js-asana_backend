@@ -1,12 +1,15 @@
 const express = require("express");
 const helmet = require("helmet");
 const config = require("./config");
+const { ProjectRoutes } = require("./routes");
+const loaders = require("./loaders");
 
 config();
+loaders();
 
 const app = express();
 app.use(express.json());
-app.use(helmet);
+app.use(helmet());
 
 const PORT = process.env.APP_PORT;
 
@@ -18,4 +21,5 @@ app.get("/", (req, res, next) => {
 })
 app.listen(PORT, () => {
     console.log(`Server running on ${PORT} port.`);
+    app.use("/projects", ProjectRoutes.router);
 })
