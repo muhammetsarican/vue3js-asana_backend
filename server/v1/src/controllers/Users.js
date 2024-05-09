@@ -1,6 +1,7 @@
 const { passwordToHash, generateAccessToken, generateRefreshToken } = require("../scripts/utils/helper");
 const { insert, list, loginUser } = require("../services/Users");
 const httpStatus = require("http-status");
+const projectService = require("../services/Projects");
 
 const index = (req, res) => {
     list()
@@ -44,8 +45,23 @@ const login = (req, res) => {
         .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err));
 }
 
+const projectList = (req, res) => {
+    projectService.list({
+        user_id: req.user._id
+    })
+        .then(projects => {
+            res.status(httpStatus.OK).send(projects)
+        })
+        .catch(() => {
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+                error: "An error occured unexptectly during getting projects!"
+            })
+        })
+}
+
 module.exports = {
     create,
     index,
-    login
+    login,
+    projectList
 }

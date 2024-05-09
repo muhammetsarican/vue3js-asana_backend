@@ -6,10 +6,18 @@ const insert = (projectData) => {
 }
 
 const list = () => {
-    return Projects.find({});
+    return Projects.find({}).populate({
+        path: "user_id",
+        select: "full_name email",
+    });
+}
+
+const modify = (data, id) => {
+    return Projects.findByIdAndUpdate(id, data, { new: true });
 }
 
 module.exports = {
     insert,
-    list
+    list,
+    modify
 }
