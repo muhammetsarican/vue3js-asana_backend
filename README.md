@@ -11,3 +11,5 @@
 - *JsonWebToken*: That provides to authenticate the user.
 - *Crypto JS*: That helps to create crypted passwords or etc.
 - *Http Status*: For status codes.
+- *Uuid*: This generates new uniqie codes
+- *Node Mailer*: Node mailer is a library that provides send an email.

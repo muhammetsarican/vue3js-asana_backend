@@ -1,7 +1,9 @@
 const { passwordToHash, generateAccessToken, generateRefreshToken } = require("../scripts/utils/helper");
-const { insert, list, loginUser } = require("../services/Users");
+const { insert, list, loginUser, modify } = require("../services/Users");
 const httpStatus = require("http-status");
 const projectService = require("../services/Projects");
+const uuid = require("uuid");
+const eventEmitter = require("../scripts/events/eventEmitter");
 
 const index = (req, res) => {
     list()
@@ -59,9 +61,40 @@ const projectList = (req, res) => {
         })
 }
 
+const resetPassword = (req, res) => {
+    const newPassword = uuid.v4()?.split("-")[0] || `usr-${new Date().getTime()}`;
+    modify({ email: req.body.email }, { password: passwordToHash(newPassword) })
+        .then(updatedUser => {
+            if (!updatedUser) return res.status(httpStatus.NOT_FOUND).send({
+                error: "No user was found like that!"
+            })
+            eventEmitter.emit("send_email", {
+                to: updatedUser.email,
+                subject: "Reset Password",
+                html: `At your request, your reset password operation done. <br/> After login, dont forget change your password. <br/> New password: ${newPassword}`
+            });
+            res.status(httpStatus.OK).send({
+                message: "The neccessary information was sended your email for resetting password."
+            })
+        })
+        .catch(() => res.status(httpStatus.INTERNAL_SERVER_ERROR).send("An error occured during resetting!"));
+}
+
+const update = (req, res) => {
+    modify({ _id: req.user._id }, req.body)
+        .then(updatedUser => {
+            res.status(httpStatus.OK).send(updatedUser)
+        })
+        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+            error: `An error occured during update process! Error: ${err}`
+        }))
+}
+
 module.exports = {
     create,
     index,
     login,
-    projectList
+    projectList,
+    resetPassword,
+    update
 }

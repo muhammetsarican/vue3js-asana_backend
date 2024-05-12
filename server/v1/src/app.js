@@ -3,9 +3,11 @@ const helmet = require("helmet");
 const config = require("./config");
 const { ProjectRoutes, UserRoutes } = require("./routes");
 const loaders = require("./loaders");
+const events = require("./scripts/events");
 
 config();
 loaders();
+events();
 
 const app = express();
 app.use(express.json());
