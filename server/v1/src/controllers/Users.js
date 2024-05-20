@@ -1,9 +1,10 @@
 const { passwordToHash, generateAccessToken, generateRefreshToken } = require("../scripts/utils/helper");
-const { insert, list, loginUser, modify } = require("../services/Users");
+const { insert, list, loginUser, modify, remove, updateImage } = require("../services/Users");
 const httpStatus = require("http-status");
 const projectService = require("../services/Projects");
 const uuid = require("uuid");
 const eventEmitter = require("../scripts/events/eventEmitter");
+const path = require("path");
 
 const index = (req, res) => {
     list()
@@ -90,11 +91,43 @@ const update = (req, res) => {
         }))
 }
 
+const deleteUser = (req, res) => {
+    remove(req.params.id)
+        .then(removedUser => {
+            res.status(httpStatus.OK).send(removedUser);
+        })
+        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+            error: `An error occured during delete process! Error: ${err}`
+        }))
+}
+
+const updateProfileImage = (req, res) => {
+    console.log(req.files)
+    if (!req.files?.profile_image) {
+        return res.status(httpStatus.BAD_REQUEST).send({
+            error: "You have not any required information for this process!"
+        })
+    }
+    const extension = path.extname(req.files.profile_image.name);
+    const fileName = `${req.user._id}${extension}`
+    const folderPath = path.join(__dirname, "../", "uploads/users", fileName);
+    req.files.profile_image.mv(folderPath, function (err) {
+        if (err) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err });
+        modify({ _id: req.user._id }, { profile_photo: fileName })
+            .then(updatedUser => {
+                return res.status(httpStatus.OK).send(updatedUser);
+            })
+            .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
+    })
+    updateImage()
+}
 module.exports = {
     create,
     index,
     login,
     projectList,
     resetPassword,
-    update
+    update,
+    deleteUser,
+    updateProfileImage
 }
