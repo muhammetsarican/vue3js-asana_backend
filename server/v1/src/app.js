@@ -1,7 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const config = require("./config");
-const { ProjectRoutes, UserRoutes } = require("./routes");
+const { ProjectRoutes, UserRoutes, SectionRoutes } = require("./routes");
 const loaders = require("./loaders");
 const events = require("./scripts/events");
 const fileUpload = require("express-fileupload");
@@ -31,4 +31,5 @@ app.listen(PORT, () => {
     console.log(`Server running on ${PORT} port.`);
     app.use("/projects", ProjectRoutes.router);
     app.use("/users", UserRoutes.router)
+    app.use("/sections", SectionRoutes.router)
 })
