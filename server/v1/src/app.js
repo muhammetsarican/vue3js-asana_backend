@@ -1,7 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const config = require("./config");
-const { ProjectRoutes, UserRoutes, SectionRoutes } = require("./routes");
+const { ProjectRoutes, UserRoutes, SectionRoutes, TaskRoutes } = require("./routes");
 const loaders = require("./loaders");
 const events = require("./scripts/events");
 const fileUpload = require("express-fileupload");
@@ -32,4 +32,5 @@ app.listen(PORT, () => {
     app.use("/projects", ProjectRoutes.router);
     app.use("/users", UserRoutes.router)
     app.use("/sections", SectionRoutes.router)
+    app.use("/tasks", TaskRoutes.router)
 })
