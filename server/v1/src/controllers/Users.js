@@ -1,13 +1,13 @@
 const { passwordToHash, generateAccessToken, generateRefreshToken } = require("../scripts/utils/helper");
-const { insert, list, loginUser, modify, remove, updateImage } = require("../services/Users");
+const UserService = require("../services/UserService");
 const httpStatus = require("http-status");
-const projectService = require("../services/Projects");
+const ProjectService = require("../services/ProjectService");
 const uuid = require("uuid");
 const eventEmitter = require("../scripts/events/eventEmitter");
 const path = require("path");
 
 const index = (req, res) => {
-    list()
+    UserService.list()
         .then(response => {
             res.status(httpStatus.OK).send(response);
         })
@@ -19,7 +19,7 @@ const index = (req, res) => {
 const create = (req, res) => {
     req.body.password = passwordToHash(req.body.password);
 
-    insert(req.body)
+    UserService.insert(req.body)
         .then((response) => {
             res.status(httpStatus.CREATED).send(response)
         })
@@ -31,7 +31,7 @@ const create = (req, res) => {
 const login = (req, res) => {
     req.body.password = passwordToHash(req.body.password);
 
-    loginUser(req.body)
+    UserService.loginUser(req.body)
         .then(user => {
             if (!user) return res.status(httpStatus.NOT_FOUND).send("No user exist with this email!");
 
@@ -49,7 +49,7 @@ const login = (req, res) => {
 }
 
 const projectList = (req, res) => {
-    projectService.list({
+    ProjectService.list({
         user_id: req.user._id
     })
         .then(projects => {
@@ -64,7 +64,7 @@ const projectList = (req, res) => {
 
 const resetPassword = (req, res) => {
     const newPassword = uuid.v4()?.split("-")[0] || `usr-${new Date().getTime()}`;
-    modify({ email: req.body.email }, { password: passwordToHash(newPassword) })
+    UserService.modify({ email: req.body.email }, { password: passwordToHash(newPassword) })
         .then(updatedUser => {
             if (!updatedUser) return res.status(httpStatus.NOT_FOUND).send({
                 error: "No user was found like that!"
@@ -82,7 +82,7 @@ const resetPassword = (req, res) => {
 }
 
 const update = (req, res) => {
-    modify({ _id: req.user._id }, req.body)
+    UserService.modify({ _id: req.user._id }, req.body)
         .then(updatedUser => {
             res.status(httpStatus.OK).send(updatedUser)
         })
@@ -92,7 +92,7 @@ const update = (req, res) => {
 }
 
 const deleteUser = (req, res) => {
-    remove(req.params.id)
+    UserService.remove(req.params.id)
         .then(removedUser => {
             res.status(httpStatus.OK).send(removedUser);
         })
@@ -113,13 +113,12 @@ const updateProfileImage = (req, res) => {
     const folderPath = path.join(__dirname, "../", "uploads/users", fileName);
     req.files.profile_image.mv(folderPath, function (err) {
         if (err) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err });
-        modify({ _id: req.user._id }, { profile_photo: fileName })
+        UserService.modify({ _id: req.user._id }, { profile_photo: fileName })
             .then(updatedUser => {
                 return res.status(httpStatus.OK).send(updatedUser);
             })
             .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
     })
-    updateImage()
 }
 module.exports = {
     create,

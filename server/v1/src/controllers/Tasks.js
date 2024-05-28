@@ -1,11 +1,11 @@
-const { findOne, insert, list, modify, remove } = require("../services/Tasks");
+const TaskService = require("../services/TaskService");
 const httpStatus = require("http-status");
 
 const index = (req, res) => {
     if (!req?.params?.section_id) return res.status(httpStatus.BAD_REQUEST).send({
         error: "Project id is required, please provide it!"
     })
-    list({ section_id: req.params.section_id })
+    TaskService.list({ section_id: req.params.section_id })
         .then(response => {
             res.status(httpStatus.OK).send(response);
         })
@@ -16,7 +16,7 @@ const index = (req, res) => {
 
 const create = (req, res) => {
     req.body.user_id = req.user;
-    insert(req.body)
+    TaskService.insert(req.body)
         .then(response => {
             res.status(httpStatus.CREATED).send(response);
         })
@@ -32,7 +32,7 @@ const update = (req, res) => {
             message: "Id information not found!"
         })
     }
-    modify(req.body, req.params.id)
+    TaskService.modify(req.body, req.params.id)
         .then(response => {
             res.status(httpStatus.OK).send(response);
         })
@@ -45,7 +45,7 @@ const deleteTask = (req, res) => {
     if (!req.params.id) return res.status(httpStatus.BAD_REQUEST).send({
         message: "Id information not found!"
     })
-    remove(req.params.id)
+    TaskService.remove(req.params.id)
         .then(removeResponse => {
             return res.status(httpStatus.OK).send({
                 message: "Delete operation successfull",
@@ -58,7 +58,7 @@ const deleteTask = (req, res) => {
 }
 
 const makeComment = (req, res) => {
-    findOne({ _id: req.params.id })
+    TaskService.findOne({ _id: req.params.id })
         .then(mainTask => {
             if (!mainTask) return res.status(httpStatus.NOT_FOUND).send({
                 message: "No record found like that!"
@@ -85,7 +85,7 @@ const makeComment = (req, res) => {
 }
 
 const deleteComment = (req, res) => {
-    findOne({ _id: req.params.id })
+    TaskService.findOne({ _id: req.params.id })
         .then(mainTask => {
             mainTask.comments = mainTask.comments.filter(comment => comment._id?.toString() !== req.params.commentId);
             mainTask.save()
@@ -102,10 +102,10 @@ const deleteComment = (req, res) => {
 
 const addSubTask = (req, res) => {
     //! Get main tasks information
-    findOne({ _id: req.params.id })
+    TaskService.findOne({ _id: req.params.id })
         .then(mainTask => {
             //! Create sub task
-            insert({ ...req.body, user_id: req.user })
+            TaskService.insert({ ...req.body, user_id: req.user })
                 .then(subTask => {
                     //! Sub tasks reference showns on main task and main task updates
                     mainTask.sub_tasks.push(subTask);
@@ -126,7 +126,7 @@ const addSubTask = (req, res) => {
 }
 
 const fetchTask = (req, res) => {
-    findOne({ _id: req.params.id }, true)
+    TaskService.findOne({ _id: req.params.id }, true)
         .then(mainTask => {
             res.status(httpStatus.OK).send({
                 success: true,
