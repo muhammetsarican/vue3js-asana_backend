@@ -7,6 +7,7 @@ const events = require("./scripts/events");
 const fileUpload = require("express-fileupload");
 const bodyParser = require("body-parser");
 const path = require("path");
+const errorHandler = require("./middlewares/errorHandler");
 
 config();
 loaders();
@@ -33,4 +34,13 @@ app.listen(PORT, () => {
     app.use("/users", UserRoutes.router)
     app.use("/sections", SectionRoutes.router)
     app.use("/tasks", TaskRoutes.router)
+
+    app.use((req, res, next) => {
+        console.log("An error occured!");
+        const error = new Error("The page not found, which you searched!");
+        error.status = 404;
+        next(error);
+    })
+
+    app.use(errorHandler);
 })
