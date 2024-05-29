@@ -8,6 +8,7 @@ const fileUpload = require("express-fileupload");
 const bodyParser = require("body-parser");
 const path = require("path");
 const errorHandler = require("./middlewares/errorHandler");
+const ApiError = require("./errors/apiError");
 
 config();
 loaders();
@@ -36,10 +37,7 @@ app.listen(PORT, () => {
     app.use("/tasks", TaskRoutes.router)
 
     app.use((req, res, next) => {
-        console.log("An error occured!");
-        const error = new Error("The page not found, which you searched!");
-        error.status = 404;
-        next(error);
+        return next(new ApiError("The page not found, which you searched!", 404));
     })
 
     app.use(errorHandler);

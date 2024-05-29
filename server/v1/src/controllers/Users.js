@@ -5,35 +5,38 @@ const ProjectService = require("../services/ProjectService");
 const uuid = require("uuid");
 const eventEmitter = require("../scripts/events/eventEmitter");
 const path = require("path");
+const ApiError = require("../errors/apiError");
 
 const index = (req, res) => {
     UserService.list()
         .then(response => {
-            res.status(httpStatus.OK).send(response);
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(error => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).send(error);
-        })
+        .catch(err => next(new ApiError(err?.message)))
 };
 
 const create = (req, res) => {
     req.body.password = passwordToHash(req.body.password);
 
     UserService.insert(req.body)
-        .then((response) => {
-            res.status(httpStatus.CREATED).send(response)
+        .then(response => {
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(error => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).send(error);
-        })
+        .catch(err => next(new ApiError(err?.message)))
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
     req.body.password = passwordToHash(req.body.password);
 
     UserService.loginUser(req.body)
         .then(user => {
-            if (!user) return res.status(httpStatus.NOT_FOUND).send("No user exist with this email!");
+            if (!user) return next(new ApiError("No user exist with this email!", httpStatus.NOT_FOUND));
 
             user = {
                 ...user.toObject(),
@@ -43,83 +46,91 @@ const login = (req, res) => {
                 }
             }
             delete user.password;
-            res.status(httpStatus.OK).send(user);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
+                success: true,
+                message: user
+            });
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err));
+        .catch(err => next(new ApiError(err?.message)));
 }
 
 const projectList = (req, res) => {
     ProjectService.list({
         user_id: req.user._id
     })
-        .then(projects => {
-            res.status(httpStatus.OK).send(projects)
+        .then(response => {
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(() => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-                error: "An error occured unexptectly during getting projects!"
-            })
-        })
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const resetPassword = (req, res) => {
     const newPassword = uuid.v4()?.split("-")[0] || `usr-${new Date().getTime()}`;
     UserService.modify({ email: req.body.email }, { password: passwordToHash(newPassword) })
         .then(updatedUser => {
-            if (!updatedUser) return res.status(httpStatus.NOT_FOUND).send({
-                error: "No user was found like that!"
-            })
+            if (!updatedUser) return next(new ApiError("No user was found like that!", httpStatus.NOT_FOUND));
+
             eventEmitter.emit("send_email", {
                 to: updatedUser.email,
                 subject: "Reset Password",
                 html: `At your request, your reset password operation done. <br/> After login, dont forget change your password. <br/> New password: ${newPassword}`
             });
+
             res.status(httpStatus.OK).send({
+                success: true,
                 message: "The neccessary information was sended your email for resetting password."
             })
         })
-        .catch(() => res.status(httpStatus.INTERNAL_SERVER_ERROR).send("An error occured during resetting!"));
+        .catch((err) => next(new ApiError(err?.message)));
 }
 
 const update = (req, res) => {
     UserService.modify({ _id: req.user._id }, req.body)
-        .then(updatedUser => {
-            res.status(httpStatus.OK).send(updatedUser)
+        .then(response => {
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-            error: `An error occured during update process! Error: ${err}`
-        }))
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const deleteUser = (req, res) => {
     UserService.remove(req.params.id)
-        .then(removedUser => {
-            res.status(httpStatus.OK).send(removedUser);
+        .then(response => {
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-            error: `An error occured during delete process! Error: ${err}`
-        }))
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const updateProfileImage = (req, res) => {
     console.log(req.files)
-    if (!req.files?.profile_image) {
-        return res.status(httpStatus.BAD_REQUEST).send({
-            error: "You have not any required information for this process!"
-        })
-    }
+    if (!req.files?.profile_image) return next(new ApiError("You have not any required information for this process!", httpStatus.BAD_REQUEST));
+
     const extension = path.extname(req.files.profile_image.name);
     const fileName = `${req.user._id}${extension}`
     const folderPath = path.join(__dirname, "../", "uploads/users", fileName);
+
     req.files.profile_image.mv(folderPath, function (err) {
-        if (err) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err });
+        if (err) return next(new ApiError(err?.message));
+
         UserService.modify({ _id: req.user._id }, { profile_photo: fileName })
             .then(updatedUser => {
-                return res.status(httpStatus.OK).send(updatedUser);
+                return res.status(httpStatus.OK).send({
+                    success: true,
+                    message: updatedUser
+                })
             })
-            .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
+            .catch(err => next(new ApiError(err?.message)));
     })
 }
+
 module.exports = {
     create,
     index,

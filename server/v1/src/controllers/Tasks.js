@@ -1,68 +1,57 @@
+const ApiError = require("../errors/apiError");
 const TaskService = require("../services/TaskService");
 const httpStatus = require("http-status");
 
 const index = (req, res) => {
-    if (!req?.params?.section_id) return res.status(httpStatus.BAD_REQUEST).send({
-        error: "Project id is required, please provide it!"
-    })
     TaskService.list({ section_id: req.params.section_id })
         .then(response => {
-            res.status(httpStatus.OK).send(response);
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(err => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err);
-        })
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const create = (req, res) => {
     req.body.user_id = req.user;
     TaskService.insert(req.body)
         .then(response => {
-            res.status(httpStatus.CREATED).send(response);
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(err => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err);
-        })
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const update = (req, res) => {
-    console.log(req.params.id);
-    if (!req.params.id) {
-        return res.status(httpStatus.BAD_REQUEST).send({
-            message: "Id information not found!"
-        })
-    }
     TaskService.modify(req.body, req.params.id)
         .then(response => {
-            res.status(httpStatus.OK).send(response);
+            return res.status(httpStatus.OK).send({
+                success: true,
+                message: response
+            });
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-            error: "An error occured during save operation."
-        }))
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const deleteTask = (req, res) => {
-    if (!req.params.id) return res.status(httpStatus.BAD_REQUEST).send({
-        message: "Id information not found!"
-    })
     TaskService.remove(req.params.id)
-        .then(removeResponse => {
+        .then(response => {
             return res.status(httpStatus.OK).send({
-                message: "Delete operation successfull",
-                data: removeResponse
+                success: true,
+                message: response
             });
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-            error: `An error occured during remove operation. Error is ${err}`
-        }))
+        .catch(err => next(new ApiError(err?.message)))
 }
 
 const makeComment = (req, res) => {
     TaskService.findOne({ _id: req.params.id })
         .then(mainTask => {
-            if (!mainTask) return res.status(httpStatus.NOT_FOUND).send({
-                message: "No record found like that!"
-            })
+            if (!mainTask) return next(new ApiError("No record found like that!", httpStatus.NOT_FOUND));
+
             const comment = {
                 ...req.body,
                 commented_at: new Date(),
@@ -70,16 +59,13 @@ const makeComment = (req, res) => {
             };
             mainTask.comments.push(comment);
             mainTask.save()
-                .then(updatedDoc => {
-                    res.status(httpStatus.OK).send({
-                        status: "success",
-                        data: updatedDoc
-                    })
+                .then(response => {
+                    return res.status(httpStatus.OK).send({
+                        success: true,
+                        message: response
+                    });
                 })
-                .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({
-                    success: false,
-                    error: err
-                }))
+                .catch(err => next(new ApiError(err?.message)))
         })
         .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
 }
@@ -89,15 +75,15 @@ const deleteComment = (req, res) => {
         .then(mainTask => {
             mainTask.comments = mainTask.comments.filter(comment => comment._id?.toString() !== req.params.commentId);
             mainTask.save()
-                .then(updatedDoc => {
-                    res.status(httpStatus.OK).send({
+                .then(response => {
+                    return res.status(httpStatus.OK).send({
                         success: true,
-                        data: updatedDoc
-                    })
+                        message: response
+                    });
                 })
-                .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
+                .catch(err => next(new ApiError(err?.message)))
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
+        .catch(err => next(new ApiError(err.message)));
 }
 
 const addSubTask = (req, res) => {
@@ -111,18 +97,18 @@ const addSubTask = (req, res) => {
                     mainTask.sub_tasks.push(subTask);
                     console.log(mainTask.sub_tasks);
                     mainTask.save()
-                        .then(updatedDoc => {
-                            //! New document sends to user
+                        //! New document sends to user
+                        .then(response => {
                             return res.status(httpStatus.OK).send({
                                 success: true,
-                                data: updatedDoc
-                            })
+                                message: response
+                            });
                         })
-                        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
+                        .catch(err => next(new ApiError(err?.message)))
                 })
-                .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err))
+                .catch(err => next(new ApiError(err.message)))
         })
-        .catch(err => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err }));
+        .catch(err => next(new ApiError(err.message)));
 }
 
 const fetchTask = (req, res) => {
