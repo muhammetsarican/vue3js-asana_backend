@@ -24,8 +24,8 @@ class TaskService extends BaseService {
         }])
     }
 
-    list() {
-        return super.list([{
+    list(where) {
+        return super.list(where).populate([{
             path: "user_id",
             select: "full_name email profile_photo",
         }, {

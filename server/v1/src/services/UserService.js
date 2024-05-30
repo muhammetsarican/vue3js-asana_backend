@@ -10,7 +10,7 @@ class UserService extends BaseService {
         return super.findOne(where);
     }
 
-    modify(where, data) {
+    modify(data, where) {
         return UserModel.findOneAndUpdate(where, data, { new: true })
     }
 }

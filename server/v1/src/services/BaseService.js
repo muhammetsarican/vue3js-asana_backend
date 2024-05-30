@@ -11,8 +11,8 @@ class BaseService {
         return new this.Model(data).save();
     }
 
-    list() {
-        return this.Model.find({});
+    list(where) {
+        return this.Model.find(where || {});
     }
 
     modify(data, id) {

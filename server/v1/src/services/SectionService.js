@@ -6,8 +6,8 @@ class SectionService extends BaseService {
         super(SectionModel);
     }
 
-    list() {
-        return super.list().populate([{
+    list(where) {
+        return super.list(where).populate([{
             path: "user_id",
             select: "full_name email profile_photo",
         }, {

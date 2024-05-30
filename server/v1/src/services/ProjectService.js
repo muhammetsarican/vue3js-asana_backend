@@ -6,8 +6,8 @@ class ProjectService extends BaseService {
         super(ProjectModel);
     }
 
-    list() {
-        return super.list().populate({
+    list(where) {
+        return super.list(where).populate({
             path: "user_id",
             select: "full_name email profile_photo",
         })
